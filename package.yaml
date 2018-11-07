@@ -1,0 +1,35 @@
+name:                ft14-random
+version:             0.1.0.0
+license:             AllRightsReserved
+author:              "Tomasz Tylec"
+maintainer:          "ttylec@gmail.com"
+copyright:           "2018 Tomasz Tylec"
+
+extra-source-files:
+- README.md
+
+description:         Please see the README
+
+dependencies:
+- base >= 4.7 && < 5
+- mtl
+- containers
+- extra
+- random-fu
+- random-source
+- vector
+- criterion
+- mwc-random
+- statistics
+- ihaskell
+- ihaskell-inline-r
+
+
+executables:
+  benchmark:
+    main: examples/benchmark.hs
+    ghc-options: -O1
+
+  memory:
+    main: examples/memory.hs
+    ghc-options: -O1

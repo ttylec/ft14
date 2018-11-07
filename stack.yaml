@@ -1,0 +1,18 @@
+resolver: lts-10.2
+
+packages:
+- .
+
+extra-deps:
+  - git: http://github.com/tweag/HaskellR.git
+    commit: 59e8540f6fd6c84acba1655d758bab637b675219
+    subdirs:
+      - IHaskell
+      - inline-r
+  - ihaskell-0.9.0.2
+  - ihaskell-blaze-0.3.0.1
+  - ghc-parser-0.2.0.1
+
+nix:
+  shell-file: ./shell.nix
+  path: ["nixpkgs=./nixpkgs.nix"]

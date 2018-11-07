@@ -1,0 +1,274 @@
+\documentclass[mathserif, 8pt]{beamer}
+\usetheme{metropolis}
+% \usepackage{eulervm}
+% \usepackage[scaled]{helvet}
+
+% \usetheme{default}
+% \usepackage[T1]{fontenc} % Needed for Type1 Concrete
+% \usepackage{beton}
+% \documentclass[8pt]{beamer}
+\usepackage{minted}
+\usepackage{mathtools}
+
+\setminted{fontsize=\small,baselinestretch=1}
+
+\newfontfamily\mfont[Ligatures=TeX]{Fira Sans UltraLight}
+\newcommand{\muted}[1]{{\mfont#1}}
+\newcommand{\remark}[1]{{\footnotesize#1\par}}
+\newcommand{\Reals}{\mathbb{R}}
+\def\fs{\vskip0ex}
+
+\title[Randomness in Haskell]{Randomness in Haskell}
+
+\author{Tomasz Tylec} % Your name
+\institute[IFR/M-ZF]
+{
+IF Research Polska / Mazars -- Zettafox
+\medskip
+\textit{tomasz.tylec@ifresearch.pl}
+}
+\date{\today} % Date, can be changed to a custom date
+
+\begin{document}
+
+\begin{frame}
+\titlepage % Print the title page as the first slide
+\end{frame}
+
+\begin{frame}
+\frametitle{Overview}
+\tableofcontents
+\end{frame}
+
+\section{Motivation}
+
+\begin{frame}[fragile]
+  \frametitle{What's the problem?}
+
+  \begin{itemize}
+  \item we like pure functions -- same input produce same output, no side
+    effects:
+
+\begin{minted}{haskell}
+sq :: Num a => a -> a
+sq x = x*x
+\end{minted}
+
+  \item function returning random value \alert{cannot be pure}\\
+    \remark{it is supposed to be random, not deterministic ...}
+
+\begin{minted}{haskell}
+data Coin = Head | Tail
+
+-- Flip coin k times
+filpCoinK :: Int -> [Coin]  -- can't be random
+flipCoinK k = ...
+
+flipCoinK' :: Int -> IO [Coin]  -- this could
+flipCoinK' k = ...
+\end{minted}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Yes, but ...}
+  \begin{itemize}
+  \item ... but random number generators are deterministic!
+
+\begin{minted}{haskell}
+    data Coin = Head | Tail
+
+    filpCoinK :: Seed -> Int -> (Seed, [Coin])
+\end{minted}
+
+  \item this requires to pass random generator state everywhere around ...
+  \item ... we could hide it \verb|State| monad ...
+  \item ... but still, not so elegant ...
+  \item and would not work with true random source.
+  \end{itemize}
+
+  On the other hand, \textbf{probability theory} is basically
+  all about randomness.
+
+  \alert{How did mathematicians get rid of ``random outcome of experiment''?}
+\end{frame}
+
+\section{Mathematical background}
+
+\begin{frame}
+  \frametitle{Mathematical view -- probability theory}
+
+  \begin{block}{Probability space}
+    \fs
+    Let:
+    \begin{itemize}
+    \item $\Omega$ be a set -- \emph{sample space} -- set of outcomes of some
+      random experiment.
+    \item $\mathcal{E}$ a ``nice'' family of subsets of $\Omega$ -- \emph{set of
+        events} (outcome may not be ``sharp'').
+    \item $P\dblcolon \mathcal E \to \Reals$ a \muted{measurable} function -- \emph{probability
+        measure} -- such that:
+    \end{itemize}
+    \begin{enumerate}
+    \item $P(a) \ge 0$ for all $a\in \mathcal E$
+    \item $P(\Omega) = 1$
+    \item $P(a + b) = P(a) + (b)$ whenever $a \cap b = \emptyset$
+    \end{enumerate}
+  \end{block}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Random variables}
+
+  \begin{block}{Random variable}\fs
+    A (measurable) function $\Omega \to X$ from sample space to some set $X$.
+    It maps ``random experiment outcomes'' to some mathematically tractable objects.\\
+    \remark{e.g. real numbers, but can be other things too.}
+
+    $\mathcal R(\Omega)$ -- the set of all random variables on $(\Omega,
+    \mathcal{E}, P)$.
+  \end{block}
+
+  \begin{block}{Expected value}\fs
+    If $r \in \mathcal R(\Omega)$ is a random variable, then
+    \begin{equation*}
+      \mathbb E(r) = \int_\Omega r(x) d\alert<4->{p(x)}
+                   \uncover<2->{ = \int_\Omega r(x) \alert<4->{p(x)} dx}
+                   \uncover<3->{ = \sum_{x \in \Omega} r_x \alert<4->{p_x}}
+    \end{equation*}
+    is called \alert{expected value} of random variable $r$.
+  \end{block}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Getting rid of sample space}
+
+  $(\mathcal R, \mathcal R^*)$ the pair of (set of random variables, set of
+  expectations) is totally sufficient to formulate all probability theory.
+
+  Note that this does not mention $\Omega$!
+
+\end{frame}
+
+\section{Expressing idea in pseudo-Haskell}
+
+\begin{frame}[fragile]
+  \frametitle{Random variable type}
+
+\begin{minted}{haskell}
+type RVar a = Ω -> a -- random variable of type a
+
+instance Functor RVar where
+    fmap :: (a -> b) -> RVar a -> RVar b
+    fmap f rv = f . rv
+\end{minted}
+
+  Let's just substitute for \verb|RVar|:
+
+  \mint{haskell}|fmap :: (a -> b) -> (Ω -> a) -> (Ω -> b)|
+
+  We can easily verify functor laws:
+
+\begin{minted}{haskell}
+fmap id rx = id . rx = rx
+
+fmap (g . f) rx = (g . f) . rx
+(fmap g . fmap f) rx = fmap g (fmap f rx) = fmap g (f . rx) = g . (f . rx)
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Random variable type}
+  It's a monad too, in pseudo-code:
+
+\begin{minted}{haskell}
+type RVar a = Ω -> a | (Ω,Ω) -> a | (Ω,Ω,Ω) -> a | ...
+
+instance Monad RVar where
+    return :: a -> RVar a
+    --        a -> (Ω -> a)
+    return x = const x
+
+    (>>=) :: RVar a -> (a -> RVar b)   -> RVar b
+    --     (Ω -> a) -> (a -> (Ω -> b)) -> ((Ω,Ω) -> b)
+    rv >>= f = f . rv
+    -- because Ω -> Ω -> b is isomorphic to (Ω,Ω) -> b
+\end{minted}
+
+\alert{We got rid of $\Omega$!}
+
+\end{frame}
+
+\section{The \texttt{random-fu} package}
+
+\begin{frame}[fragile]
+  \frametitle{Basic blocks}
+
+  \emph{Random variable} is a basic type:
+\begin{minted}{haskell}
+data RVar a  -- random variable of type a
+
+instance Monad RVar
+\end{minted}
+
+  and \emph{probability distribution} is a type-class:
+\begin{minted}{haskell}
+class Distribution d t where
+    rvar :: d t -> RVar t
+\end{minted}
+
+  It helps to construct random variables, e.g.:
+  \mint{haskell}|stdUniform :: Distribution StdUniform a => RVar a|
+  \vskip-1ex
+  \remark{standard uniform distribution of type \texttt{a};\\
+    e.g. uniform on $[0, 1]$ interval for \texttt{Double},
+    random int for \texttt{Int}, random \texttt{Bool}}
+  \mint{haskell}|normal :: Distribution Normal a => a -> a -> RVar a|
+  \vskip-1ex
+  \remark{normal (Gaussian) random variable of type \texttt{a} with given
+    mean and standard deviation;\\
+    defined only for \texttt{Double} and \texttt{Float}.}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Sampling random variables}
+
+  At some point, we want to get the ``random value''.
+  Random variable can be \emph{sampled:}
+  \remark{types are simplified for clarity}
+\begin{minted}{haskell}
+  sample     :: MonadRandom  m   => RVar a -> m a
+  sampleFrom :: RandomSource m s => s -> RVar a -> m a
+\end{minted}
+
+  \mintinline{haskell}{MonadRandom} is a monad that has default source of
+  entropy. Instance is defined for \mintinline{haskell}{IO}.
+
+  \mintinline{haskell}{RandomSource} is a specific source of entropy in monad
+  \texttt{m}. Instances exist for standard haskell packages providing
+  randomness (\texttt{mersenne-random-pure64, mwc-random, random}).
+
+  \alert{Demo part}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Mathematical point of view}
+
+  \emph{Programmers} (imperative) think in terms of evaluation -- how to generate
+  random numbers.
+
+  \emph{Mathematicians} think how to describe things. Functional languages are
+  declarative, mathematician point of view should be more natural.
+
+  It is all about nice and clear mental model.
+
+  \begin{block}{Random variable}
+    A map $\Omega \to X$ from sample space to some set $X$.
+  \end{block}
+
+\end{frame}
+
+\end{document}
