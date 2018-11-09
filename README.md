@@ -5,8 +5,12 @@ Presentation given at Functional Tricity #14 meet-up.
 [Presentation](https://github.com/ttylec/ft14/blob/master/presentation/randomness.pdf)
 is pre-compiled, but LaTeX sources are included. Use `latexmk` with given config file.
 
-[Demo notebook](https://github.com/ttylec/ft14/blob/master/presentation/randomness-live-coding.ipynb)
-used for live-coding requires HaskellR to be installed. Use:
+[Demo
+notebook](https://github.com/ttylec/ft14/blob/master/presentation/randomness-live-coding.ipynb)
+prototype for live-coding during talks and
+the
+[one](https://github.com/ttylec/ft14/blob/master/presentation/randomness-live-coding.ipynb)
+that was live-coded during presentation. Both require HaskellR, use:
 
 ```
 stack --nix build
