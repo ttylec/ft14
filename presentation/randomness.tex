@@ -1,4 +1,4 @@
-\documentclass[mathserif, 8pt]{beamer}
+\documentclass[mathserif, 8pt, handout]{beamer}
 \usetheme{metropolis}
 \usepackage{minted}
 \usepackage{mathtools}
@@ -17,8 +17,8 @@
 \author{Tomasz Tylec} % Your name
 \institute[IFR/M-ZF]
 {
-IF Research Polska / Mazars-Zettafox (France)
-\medskip\\
+IF Research Polska (Gdańsk) / Mazars-Zettafox (Paris)
+\medskip\hspace{1ex}$\vert$\hspace{1ex}
 \textit{tomasz.tylec@ifresearch.pl}
 }
 \date{November 8, 2018} % Date, can be changed to a custom date
@@ -32,6 +32,10 @@ IF Research Polska / Mazars-Zettafox (France)
 \begin{frame}
 \frametitle{Overview}
 \tableofcontents
+\vfill
+\begin{flushright}
+  \includegraphics[width=2cm]{qrcode.png}
+\end{flushright}
 \end{frame}
 
 \section{Motivation}
@@ -293,7 +297,7 @@ class Distribution d t where
   \item we iterate process $k$-times starting from some point \mintinline{haskell}|s0|:
 \begin{minted}{haskell}
 run :: Int -> (State -> RVar State) -> State -> RVar State
-run n t s0 = t s0 >>= process (n-1) t
+run n t s0 = t s0 >>= run (n-1) t
 \end{minted}
   \end{itemize}
 
@@ -327,7 +331,7 @@ toRule :: Database -> Int -> Rule
     \pause
   \item and scored:
 \begin{minted}{haskell}
-score :: Database -> Rule -> Database
+score :: Database -> Rule -> Double
 \end{minted}
   \end{itemize}
 
